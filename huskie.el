@@ -104,6 +104,7 @@ in this map via `huskie-bind-logname->filename'.")
   (puthash logname shell huskie/log-script-map))
 
 (defun huskie/logname->proc-name (logname)
+  "Make a proc name from a LOGNAME."
   (format "*log-%s*" logname))
 
 (defun huskie/make-log-process (logname &optional filename)
