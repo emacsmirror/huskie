@@ -4,6 +4,8 @@
 
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Keywords: lisp, processes
+;; Version: 0.0.1
+;; Package-Requires: ((anaphora "0.0.6"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -24,10 +26,55 @@
 
 ;; Named after my trusty Huskavana chainsaw. How I love it.
 
+;; Usage:
+;;
+;; (huskie-log "something" "logger-name")
+;;
+;; will send "something" to the "logger-name" which will be
+;; automatically mapped to a file in "/tmp/logger-name"
+;;
+;; The automatic file mapping is done with
+;; `huskie-log-default-directory' which is a variable you can let-bind
+;; or simply change.
+;;
+;; (let ((huskie-log-default-directory "/home/nictest"))
+;;   (hukie-log "just a test" "my-log"))
+;;
+;; will send "just a test" to the log process "my-log" and create a
+;; file "/home/nictest/my-log"
+;;
+;; The mapping between filenames and lognames can be defined:
+;;
+;; (huskie-bind-logname->filename "nictest" "/tmp/my-log")
+;; (huskie-log "test100!" "nictest")
+;;
+;; will send "test100!" to the file "/tmp/my-log" though a logging
+;; process called "nictest" will be created.
+;;
+;; All the logging is done through async processes. A default process
+;; is used unless something specific exists for the logname. Setting a
+;; script can be done with `huskie-set-script'.
+;;
+;; The script MUST include a single %s to accept the filename. Failure
+;; to do so will result in an error.
+;;
+;; The script MUST be a shell script.
+;;
+;; (huskie-set-script
+;;    "nictest"
+;;    "while read line; do logger -f %s $line ; done")
+;; (huskie-log "test 200" "nictest")
+;;
+;; will send "test 200" through "nictest" via the syslog logger
+;; program.
+
+
 ;;; Code:
 
+(require 'anaphora)
+
 (defconst huskie/log-default-script
-  "while read line ; do echo $line >> %s ; done"
+  "while read line ; do echo $line; echo $line >> %s ; done"
   "The default script for handling logging.")
 
 (defconst huskie/log-script-map
@@ -37,13 +84,27 @@
 The script should have a single %s in it which should point to
 any filename.")
 
-(defconst huskie/log-default-directory
+(defconst huskie/logname-file-map
+  (make-hash-table :test 'equal)
+  "Map of lognames to filenames.
+
+If you want a logname to map to a specific filename put something
+in this map via `huskie-bind-logname->filename'.")
+
+(defvar huskie-log-default-directory
   "/tmp"
   "The default directory where log files go.")
+
+(defun huskie-bind-logname->filename (logname filename)
+  "Bind LOGNAME to FILENAME so we use that file when we log."
+  (puthash logname filename huskie/logname-file-map))
 
 (defun huskie-set-script (logname shell)
   "Specify that SHELL is used to log LOGNAME."
   (puthash logname shell huskie/log-script-map))
+
+(defun huskie/logname->proc-name (logname)
+  (format "*log-%s*" logname))
 
 (defun huskie/make-log-process (logname &optional filename)
   "Make a log process logging through LOGNAME script.
@@ -54,16 +115,16 @@ FILENAME then just derive one through LOGNAME.
 The script for logging is either LOGNAME specific via a lookup in
 `huskie/log-script-map' or the default log script
 `huskie/log-default-script'."
-  (let ((file
-         (or filename
-             (concat
-              (file-name-as-directory huskie/log-default-directory)
-              logname)))
-        (log-name (format "*log-%s*" filename))
-        (buf-name (concat " " log-name))
-        (log-script
-         (or (gethash logname huskie/log-script-map)
-             huskie/log-default-script)))
+  (let* ((file
+          (or filename
+              (concat
+               (file-name-as-directory huskie-log-default-directory)
+               logname)))
+         (log-name (huskie/logname->proc-name logname))
+         (buf-name (concat " " log-name))
+         (log-script
+          (or (gethash logname huskie/log-script-map)
+              huskie/log-default-script)))
     (start-process-shell-command
      log-name (get-buffer-create buf-name)
      (format log-script filename))))
@@ -72,10 +133,13 @@ The script for logging is either LOGNAME specific via a lookup in
   "Send TEXT to LOGNAME.
 
 If LOGNAME does not have an existing process it is created."
-  (let ((proc (or
-               (get-process logname)
-               (huskie/make-log-process logname))))
-    (process-send-string proc text)))
+  (let ((proc
+         (or
+          (get-process (huskie/logname->proc-name logname))
+          (huskie/make-log-process
+           logname
+           (awhen (gethash logname huskie/logname-file-map) it)))))
+    (process-send-string proc (concat text "\n"))))
 
 (provide 'huskie)
 
