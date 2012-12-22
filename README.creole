@@ -2,7 +2,7 @@ Make logging through processes.
 
 == Why Huskie?? ==
 
-Named after my trusty Huskavana chainsaw. How I love it.
+Named after my trusty Husqavana chainsaw. How I love it.
 
 == Usage ==
 
