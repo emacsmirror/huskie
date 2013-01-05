@@ -4,7 +4,8 @@
 
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Keywords: lisp, processes
-;; Version: 0.0.1
+;; Version: 0.0.2
+;; URL: http://github.com/nicferrier/emacs-huskie
 ;; Package-Requires: ((anaphora "0.0.6"))
 
 ;; This program is free software; you can redistribute it and/or modify
