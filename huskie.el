@@ -100,7 +100,14 @@ in this map via `huskie-bind-logname->filename'.")
   (puthash logname filename huskie/logname-file-map))
 
 (defun huskie-set-script (logname shell)
-  "Specify that SHELL is used to log LOGNAME."
+  "Specify that SHELL is used to log LOGNAME.
+
+SHELL MUST include a single %s to accept the filename. Failure
+to do so will result in an error.
+
+The filename passed to the %s WILL be checked to test for
+filenameness and NOT allow espcaping to shell."
+  ;; TODO implement the filename checking of %s in make-log-process
   (puthash logname shell huskie/log-script-map))
 
 (defun huskie/logname->proc-name (logname)
@@ -121,11 +128,18 @@ The script for logging is either LOGNAME specific via a lookup in
               (concat
                (file-name-as-directory huskie-log-default-directory)
                logname)))
+         ;; TODO we MUST check `file' is a filename and not:
+         ;;
+         ;;    /tmp/blah ; rm -rf /
          (log-name (huskie/logname->proc-name logname))
          (buf-name (concat " " log-name))
          (log-script
           (or (gethash logname huskie/log-script-map)
               huskie/log-default-script)))
+    ;; Test the file is a filename
+    (assert
+     (equal file (shell-quote-argument file)) t
+     nil "file %s is unsafe" file)
     (start-process-shell-command
      log-name (get-buffer-create buf-name)
      (format log-script filename))))
@@ -133,7 +147,8 @@ The script for logging is either LOGNAME specific via a lookup in
 (defun huskie-log (text logname)
   "Send TEXT to LOGNAME.
 
-If LOGNAME does not have an existing process it is created."
+If LOGNAME does not have an existing process it is created via
+`huskie/make-log-process'."
   (let ((proc
          (or
           (get-process (huskie/logname->proc-name logname))
