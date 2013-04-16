@@ -46,9 +46,10 @@ However, huskie does NOT check that the file is under any sane root;
 indeed, it cannot do so because you might want to save log files in
 all sorts of odd places.
 
-//I am very interested to hear what people think about this so do create
-an issue on http://github.com/nicferrier/emacs-huskie if you have a
-viewpoint about this.//
+//I am very interested to hear what people think about this so do
+create an issue
+on [[http://github.com/nicferrier/emacs-huskie|the GitHub]] if you
+have a viewpoint about this.//
 
 
 == Processes ==
@@ -117,6 +118,8 @@ Log scripts to create dates and such are likely good candidates for
 the shell script.
 
 
-Deriving log file destinations from the log text itself is a VERY BAD
+== Warnings ==
+
+Deriving log file destinations from the log text itself is a **VERY BAD**
 idea. Huskie makes no attempt to thwart this. If you do it you are a
 fool.
