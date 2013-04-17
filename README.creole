@@ -65,9 +65,9 @@ The script MUST be a shell script.
 
 {{{
 (huskie-set-script
-   "nictest"
+   "nictest-log"
    "while read line; do echo $line > %s ; done")
-(huskie-log "test 200" "nictest")
+(huskie-log "test 200" "nictest-log")
 }}}
 
 will send "test 200" through "nictest" via the syslog logger
@@ -77,9 +77,9 @@ You can avoid the use of the filename through shell tricks:
 
 {{{
 (huskie-set-script
-   "nictest"
+   "nictest-log"
    "while read line; do logger -t my-log $line ; done # %s")
-(huskie-log "test 200" "nictest")
+(huskie-log "test 200" "nictest-log")
 }}}
 
 this will send the logging through the system logger, the filename is
@@ -92,7 +92,7 @@ Here's an example where all the things that can be adjusted, are:
 {{{
 (huskie-set-script
    "test-log"
-   "while read line; do ( printf $line ; echo ) > %s ; done")
+   "while read line; do echo $line > %s ; done")
 (huskie-bind-logname->filename "test-log" "/tmp/my-log")
 (huskie-log "test 200" "test-log")
 }}}
@@ -112,7 +112,6 @@ while read line ; do ... ; done
 is an excellent way of ensuring you have lines going through
 loggers. This is why huskie does it this way. Other solutions are
 possible of course, but this is probably the best.
-
 
 Log scripts to create dates and such are likely good candidates for
 the shell script.
