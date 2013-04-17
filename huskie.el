@@ -155,7 +155,9 @@ If LOGNAME does not have an existing process it is created via
           (get-process (huskie/logname->proc-name logname))
           (huskie/make-log-process
            logname
-           (awhen (gethash logname huskie/logname-file-map) it)))))
+           (let ((found-log
+                  (gethash logname huskie/logname-file-map)))
+             (when found-log found-log))))))
     (process-send-string proc (concat text "\n"))))
 
 (provide 'huskie)
